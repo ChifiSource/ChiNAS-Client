@@ -1,0 +1,201 @@
+[gd_scene load_steps=2 format=3 uid="uid://dogcc14o5m3vm"]
+
+[ext_resource type="Script" path="res://pages/main.gd" id="1_c4va2"]
+
+[node name="main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 1.0
+offset_bottom = 5.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_c4va2")
+
+[node name="background" type="ColorRect" parent="."]
+layout_mode = 0
+offset_right = 1926.0
+offset_bottom = 1084.0
+color = Color(0.142638, 0.357166, 0.612518, 1)
+
+[node name="connect_page" type="ColorRect" parent="background"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -326.0
+offset_top = -102.0
+offset_right = 326.0
+offset_bottom = 63.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.188235, 0.188235, 0.188235, 0.815686)
+
+[node name="connect_container" type="VBoxContainer" parent="background/connect_page"]
+layout_mode = 1
+offset_left = 8.0
+offset_top = 9.0
+offset_right = 645.0
+offset_bottom = 164.0
+
+[node name="Label" type="Label" parent="background/connect_page/connect_container"]
+layout_mode = 2
+text = "connect to a server"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="background/connect_page/connect_container"]
+layout_mode = 2
+
+[node name="ipbox" type="TextEdit" parent="background/connect_page/connect_container/HBoxContainer"]
+custom_minimum_size = Vector2(550, 40)
+layout_mode = 2
+placeholder_text = "ipv4 address"
+
+[node name="portbox" type="SpinBox" parent="background/connect_page/connect_container/HBoxContainer"]
+layout_mode = 2
+min_value = 2000.0
+max_value = 12000.0
+value = 8000.0
+prefix = ":"
+
+[node name="secretbox" type="TextEdit" parent="background/connect_page/connect_container"]
+custom_minimum_size = Vector2(550, 40)
+layout_mode = 2
+placeholder_text = "secret"
+
+[node name="connect_button" type="Button" parent="background/connect_page/connect_container"]
+layout_mode = 2
+text = "connect"
+
+[node name="username_box" type="ColorRect" parent="background"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -201.0
+offset_top = -126.0
+offset_right = 202.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.309109, 0.330224, 0.51443, 1)
+
+[node name="ColorRect" type="ColorRect" parent="background/username_box"]
+layout_mode = 0
+offset_right = 403.0
+offset_bottom = 31.0
+color = Color(0.244778, 0.264495, 0.433973, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="background/username_box"]
+layout_mode = 0
+offset_left = 9.0
+offset_top = 5.0
+offset_right = 396.0
+offset_bottom = 117.0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="background/username_box/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="background/username_box/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "successfully connected"
+
+[node name="VSeparator" type="VSeparator" parent="background/username_box/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="background/username_box/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "192.168.0.19:8000"
+horizontal_alignment = 2
+
+[node name="HSeparator" type="HSeparator" parent="background/username_box/VBoxContainer"]
+layout_mode = 2
+
+[node name="usernamebox" type="LineEdit" parent="background/username_box/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "username"
+
+[node name="login_button" type="Button" parent="background/username_box/VBoxContainer"]
+layout_mode = 2
+text = "login"
+
+[node name="main_page" type="ColorRect" parent="background"]
+visible = false
+layout_mode = 0
+offset_left = -3.0
+offset_top = 1.0
+offset_right = 1923.0
+offset_bottom = 1089.0
+color = Color(0.389727, 0.353984, 0.514471, 0.815686)
+
+[node name="inspector_panel" type="ColorRect" parent="background/main_page"]
+offset_left = 1548.0
+offset_top = -1.0
+offset_right = 1927.0
+offset_bottom = 1079.0
+color = Color(0.689714, 0.58879, 0.790017, 1)
+
+[node name="fileinfo" type="GridContainer" parent="background/main_page/inspector_panel"]
+visible = false
+layout_mode = 0
+offset_left = 15.0
+offset_top = 13.0
+offset_right = 361.0
+offset_bottom = 901.0
+columns = 2
+
+[node name="filename" type="Label" parent="background/main_page/inspector_panel/fileinfo"]
+layout_mode = 2
+text = "filename"
+
+[node name="filetype" type="Label" parent="background/main_page/inspector_panel/fileinfo"]
+layout_mode = 2
+text = "file type"
+
+[node name="download_selected" type="Button" parent="background/main_page/inspector_panel/fileinfo"]
+layout_mode = 2
+text = "download"
+
+[node name="files_panel" type="ColorRect" parent="background/main_page"]
+offset_left = 386.0
+offset_right = 1546.0
+offset_bottom = 1088.0
+color = Color(0.389727, 0.353984, 0.514471, 0.815686)
+
+[node name="ItemList" type="ItemList" parent="background/main_page/files_panel"]
+layout_mode = 0
+offset_left = -2.0
+offset_top = -2.0
+offset_right = 1162.0
+offset_bottom = 1084.0
+theme_override_font_sizes/font_size = 25
+select_mode = 1
+allow_reselect = true
+
+[node name="directories_panel" type="ColorRect" parent="background/main_page"]
+layout_mode = 0
+offset_left = 4.0
+offset_right = 383.0
+offset_bottom = 1079.0
+color = Color(0.689714, 0.58879, 0.790017, 1)
+
+[node name="HTTPRequest" type="HTTPRequest" parent="."]
+
+[node name="download_popup" type="FileDialog" parent="."]
+initial_position = 1
+size = Vector2i(766, 500)
+access = 2
+
+[connection signal="pressed" from="background/connect_page/connect_container/connect_button" to="." method="_on_connect_button_pressed"]
+[connection signal="pressed" from="background/username_box/VBoxContainer/login_button" to="." method="_on_login_button_pressed"]
+[connection signal="pressed" from="background/main_page/inspector_panel/fileinfo/download_selected" to="." method="_on_download_selected_pressed"]
+[connection signal="item_activated" from="background/main_page/files_panel/ItemList" to="." method="_on_item_list_item_activated"]
+[connection signal="item_clicked" from="background/main_page/files_panel/ItemList" to="." method="_on_item_list_item_selected"]
+[connection signal="item_selected" from="background/main_page/files_panel/ItemList" to="." method="_on_item_list_item_selected"]
+[connection signal="confirmed" from="download_popup" to="." method="_on_download_popup_confirmed"]
