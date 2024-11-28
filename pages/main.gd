@@ -2,7 +2,11 @@ extends Control
 @onready var HTTP : HTTPRequest = $HTTPRequest
 @onready var items : ItemList = $background/main_page/files_panel/ItemList
 @onready var tree : Tree = $background/main_page/directories_panel/directory_tree
+@onready var directory_texture = load("res://images/icons/folder.svg")
+@onready var file_texture = load("res://images/icons/file.svg")
+var fs_root = null
 var directory_reference = {}
+var file_info = {}
 var selected_files = []
 var active_file : int = 0
 var connected_ip : String = ""
@@ -51,23 +55,30 @@ func _on_login_button_pressed():
 func on_nameset(result, response_code, headers, body):
 	$background/username_box.visible = false
 	HTTP.request_completed.disconnect(on_nameset)
+	HTTP.request_completed.connect(init_cd)
+	HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, "cd;~/")
+	
+func init_cd(result, response_code, headers, body):
+	HTTP.request_completed.disconnect(init_cd)
 	HTTP.request_completed.connect(obtain_ls_and_tree)
 	HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, "ls")
-	$background/main_page.visible = true
-	
+
 func obtain_ls_and_tree(result, response_code, headers, body):
 	receive_ls(result, response_code, headers, body)
 	HTTP.request_completed.disconnect(obtain_ls_and_tree)
 	HTTP.request_completed.connect(set_tree_response)
 	HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, "tree")
+	$background/main_page.visible = true
 
 func set_tree_response(result, response_code, headers, body):
-	var root = tree.create_item()
+	fs_root = tree.create_item()
+	var root = tree.create_item(fs_root)
 	root.set_text(0, "~/")
 	body = body.get_string_from_utf8()
 	var selected = root
 	var directories = {}
 	directories["~/"] = root
+	directory_reference[root] = "~/"
 	for item in body.split(";"):
 		var item_splits = item.split("|")
 		if len(item_splits) < 2:
@@ -85,27 +96,60 @@ func set_tree_response(result, response_code, headers, body):
 		if isdir == "0":
 			directories[item_name] = new_item
 			directory_reference[new_item] = item_name
+			new_item.set_icon(0, directory_texture)
+		else:
+			new_item.set_icon(0, file_texture)
 		new_item.set_text(0, fname)
 	HTTP.request_completed.disconnect(set_tree_response)
+	HTTP.request_completed.connect(tree_repos_response)
+	HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, "repos")
+
+func tree_repos_response(result, response_code, headers, body):
+	body = body.get_string_from_utf8()
+	var repos_tree = tree.create_item(fs_root)
+	repos_tree.set_text(0, "repositories")
+	var splits = body.split(";")
+	var categories = {}
+	for repo in splits:
+		var parts = repo.split("|")
+		# name|category|url|raw
+		var raw_img = parts[3].to_utf8_buffer()
+		var icon = Image.new()
+		raw_img = icon.load_png_from_buffer(raw_img)
+		var icon_texture = ImageTexture.new()
+		icon_texture.create_from_image(icon)
+		var category = parts[1]
+		if not category in categories.keys():
+			var new_cat = tree.create_item(repos_tree)
+			new_cat.set_text(0, category)
+			categories[category] = new_cat
+		var new_repo = tree.create_item(categories[category])
+		new_repo.set_text(0, parts[0])
+		new_repo.set_icon(0, icon_texture)
+		
 
 func receive_ls(result, response_code, headers, body):
-	print("lsing")
 	body = body.get_string_from_utf8()
 	var splits = body.split(";")
 	items.clear()
 	items.add_item("..")
 	selected_files = [".."]
+	file_info = {}
 	for file_dir in splits:
 		var file_dir_parts = file_dir.split("|")
 		var fname = file_dir_parts[0]
 		selected_files.append(fname)
-		items.add_item(fname)
+		var icon = file_texture
+		if file_dir_parts[1] == "0":
+			file_info[fname] = {"file_count": file_dir_parts[2], "is": "dir"}
+			icon = directory_texture
+		else:
+			file_info[fname] = {"size": file_dir_parts[2], "is": "file"}
+		items.add_item(fname, icon)
 	HTTP.request_completed.disconnect(receive_ls)
 
 func receive_cd(result, response_code, headers, body):
 	body = body.get_string_from_utf8()
-	print("cd'd")
-	print(body)
 	HTTP.request_completed.disconnect(receive_cd)
 	HTTP.request_completed.connect(receive_ls)
 	HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, "ls")
@@ -130,14 +174,27 @@ func _on_item_list_item_activated(index):
 
 func _on_item_list_item_selected(index, pos, mb):
 	var selected_file = selected_files[index]
-	if not selected_file.contains("."):
+	var fileinfo_box = $background/main_page/inspector_panel/fileinfo
+	if selected_file == "..":
+		fileinfo_box.visible = false
 		return
 	active_file = index
-	var file_info = $background/main_page/inspector_panel/fileinfo
-	file_info.visible = true
-	file_info.get_child(0).text = selected_file
-	file_info.get_child(1).text = selected_file.split(".")[1] + " file"
-
+	fileinfo_box.visible = true
+	var this_file = file_info[selected_file]
+	fileinfo_box.get_child(0).text = selected_file
+	var is_dir = this_file["is"] == "dir"
+	if not is_dir:
+		fileinfo_box.get_child(1).text = selected_file.split(".")[1] + " file"
+		fileinfo_box.get_child(2).text = "file size: " + this_file["size"]
+		fileinfo_box.get_child(6).visible = false
+		fileinfo_box.get_child(4).visible = true
+	else:
+		fileinfo_box.get_child(1).text = "directory: " + selected_file
+		fileinfo_box.get_child(2).text = this_file["file_count"] + " items"
+		#  6 is the paste_into button, 4 is the open button.
+		fileinfo_box.get_child(6).visible = true
+		fileinfo_box.get_child(4).visible = false
+		
 func _on_download_selected_pressed():
 	$download_popup.popup()
 
@@ -150,9 +207,8 @@ func _on_download_popup_confirmed():
 
 func _on_directory_tree_item_selected():
 	var selected = tree.get_selected()
-	if selected in directory_reference:
+	if selected in directory_reference.keys():
 		var selected_item_name = directory_reference[selected]
-		print("Selected item name: ", selected_item_name)
 		HTTP.request_completed.connect(receive_cd)
 		HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, 
 		"cd;" + "~/" + selected_item_name)
