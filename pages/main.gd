@@ -1,6 +1,8 @@
 extends Control
 @onready var HTTP : HTTPRequest = $HTTPRequest
 @onready var items : ItemList = $background/main_page/files_panel/ItemList
+@onready var tree : Tree = $background/main_page/directories_panel/directory_tree
+var directory_reference = {}
 var selected_files = []
 var active_file : int = 0
 var connected_ip : String = ""
@@ -49,22 +51,61 @@ func _on_login_button_pressed():
 func on_nameset(result, response_code, headers, body):
 	$background/username_box.visible = false
 	HTTP.request_completed.disconnect(on_nameset)
-	HTTP.request_completed.connect(receive_ls)
+	HTTP.request_completed.connect(obtain_ls_and_tree)
 	HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, "ls")
 	$background/main_page.visible = true
+	
+func obtain_ls_and_tree(result, response_code, headers, body):
+	receive_ls(result, response_code, headers, body)
+	HTTP.request_completed.disconnect(obtain_ls_and_tree)
+	HTTP.request_completed.connect(set_tree_response)
+	HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, "tree")
+
+func set_tree_response(result, response_code, headers, body):
+	var root = tree.create_item()
+	root.set_text(0, "~/")
+	body = body.get_string_from_utf8()
+	var selected = root
+	var directories = {}
+	directories["~/"] = root
+	for item in body.split(";"):
+		var item_splits = item.split("|")
+		if len(item_splits) < 2:
+			continue
+		var isdir = item_splits[1]
+		var item_name = item_splits[0]
+		item_name = item_name.substr(2)
+		var item_dirsplits = item_name.split("/")
+		var dirname = "~/"
+		if len(item_dirsplits) > 1:
+			dirname = "/".join(item_dirsplits.slice(0, len(item_dirsplits) - 1))
+		var fname = item_dirsplits[len(item_dirsplits) - 1]
+		selected = directories[dirname]
+		var new_item = tree.create_item(selected)
+		if isdir == "0":
+			directories[item_name] = new_item
+			directory_reference[new_item] = item_name
+		new_item.set_text(0, fname)
+	HTTP.request_completed.disconnect(set_tree_response)
 
 func receive_ls(result, response_code, headers, body):
+	print("lsing")
 	body = body.get_string_from_utf8()
 	var splits = body.split(";")
 	items.clear()
 	items.add_item("..")
 	selected_files = [".."]
 	for file_dir in splits:
-		selected_files.append(file_dir)
-		items.add_item(file_dir)
+		var file_dir_parts = file_dir.split("|")
+		var fname = file_dir_parts[0]
+		selected_files.append(fname)
+		items.add_item(fname)
 	HTTP.request_completed.disconnect(receive_ls)
 
 func receive_cd(result, response_code, headers, body):
+	body = body.get_string_from_utf8()
+	print("cd'd")
+	print(body)
 	HTTP.request_completed.disconnect(receive_cd)
 	HTTP.request_completed.connect(receive_ls)
 	HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, "ls")
@@ -87,7 +128,6 @@ func _on_item_list_item_activated(index):
 		HTTP.request_completed.connect(receive_cd)
 		HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, "cd;" + selected_file)
 
-
 func _on_item_list_item_selected(index, pos, mb):
 	var selected_file = selected_files[index]
 	if not selected_file.contains("."):
@@ -106,3 +146,13 @@ func _on_download_popup_confirmed():
 	dl_path = popup.current_path
 	HTTP.request_completed.connect(receive_download)
 	HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, "download;" + selected_files[active_file])
+
+
+func _on_directory_tree_item_selected():
+	var selected = tree.get_selected()
+	if selected in directory_reference:
+		var selected_item_name = directory_reference[selected]
+		print("Selected item name: ", selected_item_name)
+		HTTP.request_completed.connect(receive_cd)
+		HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, 
+		"cd;" + "~/" + selected_item_name)

@@ -135,6 +135,7 @@ offset_bottom = 1089.0
 color = Color(0.389727, 0.353984, 0.514471, 0.815686)
 
 [node name="inspector_panel" type="ColorRect" parent="background/main_page"]
+layout_mode = 0
 offset_left = 1548.0
 offset_top = -1.0
 offset_right = 1927.0
@@ -163,6 +164,7 @@ layout_mode = 2
 text = "download"
 
 [node name="files_panel" type="ColorRect" parent="background/main_page"]
+layout_mode = 0
 offset_left = 386.0
 offset_right = 1546.0
 offset_bottom = 1088.0
@@ -185,6 +187,11 @@ offset_right = 383.0
 offset_bottom = 1079.0
 color = Color(0.689714, 0.58879, 0.790017, 1)
 
+[node name="directory_tree" type="Tree" parent="background/main_page/directories_panel"]
+layout_mode = 0
+offset_right = 381.0
+offset_bottom = 749.0
+
 [node name="HTTPRequest" type="HTTPRequest" parent="."]
 
 [node name="download_popup" type="FileDialog" parent="."]
@@ -198,4 +205,5 @@ access = 2
 [connection signal="item_activated" from="background/main_page/files_panel/ItemList" to="." method="_on_item_list_item_activated"]
 [connection signal="item_clicked" from="background/main_page/files_panel/ItemList" to="." method="_on_item_list_item_selected"]
 [connection signal="item_selected" from="background/main_page/files_panel/ItemList" to="." method="_on_item_list_item_selected"]
+[connection signal="item_selected" from="background/main_page/directories_panel/directory_tree" to="." method="_on_directory_tree_item_selected"]
 [connection signal="confirmed" from="download_popup" to="." method="_on_download_popup_confirmed"]
