@@ -12,8 +12,10 @@ var active_file : int = 0
 var connected_ip : String = ""
 var connected_port : int = 0
 var connecting = false
+var selected_repo = null
 var url : String
 var dl_path : String
+
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	pass # Replace with function body.
@@ -104,6 +106,13 @@ func set_tree_response(result, response_code, headers, body):
 	HTTP.request_completed.connect(tree_repos_response)
 	HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, "repos")
 
+func update_repo_icon(result, response_code, headers, body):
+	var image = Image.new()
+	image.load_png_from_buffer(body)
+	var icon_texture = ImageTexture.new()
+	icon_texture.create_from_image(image)
+	selected_repo.set_icon(0, icon_texture)
+	
 func tree_repos_response(result, response_code, headers, body):
 	body = body.get_string_from_utf8()
 	var repos_tree = tree.create_item(fs_root)
@@ -113,19 +122,19 @@ func tree_repos_response(result, response_code, headers, body):
 	for repo in splits:
 		var parts = repo.split("|")
 		# name|category|url|raw
-		var raw_img = parts[3].to_utf8_buffer()
-		var icon = Image.new()
-		raw_img = icon.load_png_from_buffer(raw_img)
-		var icon_texture = ImageTexture.new()
-		icon_texture.create_from_image(icon)
 		var category = parts[1]
 		if not category in categories.keys():
 			var new_cat = tree.create_item(repos_tree)
 			new_cat.set_text(0, category)
 			categories[category] = new_cat
-		var new_repo = tree.create_item(categories[category])
-		new_repo.set_text(0, parts[0])
-		new_repo.set_icon(0, icon_texture)
+		selected_repo = tree.create_item(categories[category])
+		selected_repo.set_text(0, parts[0])
+		if parts[3] == "1":
+			HTTP.request_completed.disconnect(tree_repos_response)
+			var new_url = url + "/" + category + "/" + parts[0] + "/icon.png"
+			HTTP.request_completed.connect(update_repo_icon)
+			HTTP.request(new_url)
+			
 		
 
 func receive_ls(result, response_code, headers, body):
@@ -149,7 +158,6 @@ func receive_ls(result, response_code, headers, body):
 	HTTP.request_completed.disconnect(receive_ls)
 
 func receive_cd(result, response_code, headers, body):
-	body = body.get_string_from_utf8()
 	HTTP.request_completed.disconnect(receive_cd)
 	HTTP.request_completed.connect(receive_ls)
 	HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, "ls")
@@ -164,7 +172,27 @@ func receive_download(result, response_code, headers, body):
 	HTTP.request(url + body)
 	
 func finalize_download(result, response_code, headers, body):
-	pass # for now this will do nothing, in the future it will present a message.
+	if file_info[selected_files[active_file]]["is"] == "dir":
+		var reader := ZIPReader.new()
+		var err := reader.open(dl_path)
+		var dl_dir_splits = dl_path.split("/")
+		var dl_dir = "/".join(dl_dir_splits.slice(0, len(dl_dir_splits) - 1))
+		var fdir = DirAccess.open(dl_dir)
+		var fname = dl_dir_splits[len(dl_dir_splits) - 1]
+		fdir.rename(fname, 
+		"archive-" + fname)
+		fdir.make_dir_absolute(dl_dir + "/" + fname)
+		for file in reader.get_files():
+			var current_file_direc = file.split("/")
+			current_file_direc = "/".join(current_file_direc.slice(0, len(current_file_direc) - 1))
+			fdir.make_dir_recursive_absolute(dl_path + current_file_direc)
+			var raw_file = reader.read_file(file)
+			var filea = FileAccess.open(dl_path + file, FileAccess.WRITE)
+			filea.store_string(raw_file.get_string_from_utf8())
+			filea.close()
+		fdir.remove("archive-" + fname)
+	else:
+		print(file_info[selected_files[active_file]])
 
 func _on_item_list_item_activated(index):
 	var selected_file = selected_files[index]
@@ -188,22 +216,23 @@ func _on_item_list_item_selected(index, pos, mb):
 		fileinfo_box.get_child(2).text = "file size: " + this_file["size"]
 		fileinfo_box.get_child(6).visible = false
 		fileinfo_box.get_child(4).visible = true
+		fileinfo_box.get_child(8).visible = false
 	else:
 		fileinfo_box.get_child(1).text = "directory: " + selected_file
 		fileinfo_box.get_child(2).text = this_file["file_count"] + " items"
 		#  6 is the paste_into button, 4 is the open button.
 		fileinfo_box.get_child(6).visible = true
 		fileinfo_box.get_child(4).visible = false
+		fileinfo_box.get_child(8).visible = true
 		
 func _on_download_selected_pressed():
 	$download_popup.popup()
 
-func _on_download_popup_confirmed():
+func _on_download_popup_confirmed(path):
 	var popup = $download_popup
 	dl_path = popup.current_path
 	HTTP.request_completed.connect(receive_download)
 	HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, "download;" + selected_files[active_file])
-
 
 func _on_directory_tree_item_selected():
 	var selected = tree.get_selected()
@@ -212,3 +241,36 @@ func _on_directory_tree_item_selected():
 		HTTP.request_completed.connect(receive_cd)
 		HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, 
 		"cd;" + "~/" + selected_item_name)
+		
+func post_upload(result, response_code, headers, body):
+	HTTP.request_completed.disconnect(post_upload)
+	HTTP.request_completed.connect(receive_ls)
+	HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, "ls")
+
+func do_upload(result, response_code, headers, body):
+	HTTP.request_completed.disconnect(do_upload)
+	print("hello?")
+	body = body.get_string_from_utf8()
+	HTTP.request_completed.connect(post_upload)
+	var file = FileAccess.open(dl_path, FileAccess.READ)
+	var file_contents = file.get_as_text()
+	HTTP.request(url + body, ["Content-Type: text"], HTTPClient.METHOD_POST, 
+	file_contents + "|!EOF")
+
+func _on_upload_confirm(path):
+	HTTP.request_completed.connect(do_upload)
+	var popup = $download_popup
+	dl_path = popup.current_path
+	var fname_splits = dl_path.split("/")
+	popup.confirmed.disconnect(_on_upload_confirm)
+	popup.confirmed.connect(do_upload)
+	HTTP.request(url, ["Content-Type: text"], HTTPClient.METHOD_POST, 
+	"upload;" + fname_splits[len(fname_splits) - 1])
+
+func _on_upload_into_pressed():
+	var popup = $download_popup
+	popup.file_selected.disconnect(_on_download_popup_confirmed)
+	popup.file_selected.connect(_on_upload_confirm)
+	popup.file_mode = 0
+	popup.popup()
+	

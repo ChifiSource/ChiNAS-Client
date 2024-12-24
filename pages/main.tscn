@@ -54,6 +54,7 @@ layout_mode = 2
 [node name="ipbox" type="TextEdit" parent="background/connect_page/connect_container/HBoxContainer"]
 custom_minimum_size = Vector2(550, 40)
 layout_mode = 2
+text = "127.0.0.1"
 placeholder_text = "ipv4 address"
 
 [node name="portbox" type="SpinBox" parent="background/connect_page/connect_container/HBoxContainer"]
@@ -66,6 +67,7 @@ prefix = ":"
 [node name="secretbox" type="TextEdit" parent="background/connect_page/connect_container"]
 custom_minimum_size = Vector2(550, 40)
 layout_mode = 2
+text = "vjjin"
 placeholder_text = "secret"
 
 [node name="connect_button" type="Button" parent="background/connect_page/connect_container"]
@@ -73,7 +75,6 @@ layout_mode = 2
 text = "connect"
 
 [node name="username_box" type="ColorRect" parent="background"]
-visible = false
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -122,6 +123,7 @@ layout_mode = 2
 
 [node name="usernamebox" type="LineEdit" parent="background/username_box/VBoxContainer"]
 layout_mode = 2
+text = "emmac"
 placeholder_text = "username"
 
 [node name="login_button" type="Button" parent="background/username_box/VBoxContainer"]
@@ -187,6 +189,10 @@ layout_mode = 2
 theme_override_styles/normal = SubResource("StyleBoxFlat_fsaaf")
 text = "delete"
 
+[node name="upload_into" type="Button" parent="background/main_page/inspector_panel/fileinfo"]
+layout_mode = 2
+text = "upload into"
+
 [node name="HSeparator" type="HSeparator" parent="background/main_page/inspector_panel/fileinfo"]
 layout_mode = 2
 
@@ -248,8 +254,9 @@ access = 2
 [connection signal="pressed" from="background/connect_page/connect_container/connect_button" to="." method="_on_connect_button_pressed"]
 [connection signal="pressed" from="background/username_box/VBoxContainer/login_button" to="." method="_on_login_button_pressed"]
 [connection signal="pressed" from="background/main_page/inspector_panel/fileinfo/download_selected" to="." method="_on_download_selected_pressed"]
+[connection signal="pressed" from="background/main_page/inspector_panel/fileinfo/upload_into" to="." method="_on_upload_into_pressed"]
 [connection signal="item_activated" from="background/main_page/files_panel/ItemList" to="." method="_on_item_list_item_activated"]
 [connection signal="item_clicked" from="background/main_page/files_panel/ItemList" to="." method="_on_item_list_item_selected"]
 [connection signal="item_selected" from="background/main_page/files_panel/ItemList" to="." method="_on_item_list_item_selected"]
 [connection signal="item_selected" from="background/main_page/directories_panel/directory_tree" to="." method="_on_directory_tree_item_selected"]
-[connection signal="confirmed" from="download_popup" to="." method="_on_download_popup_confirmed"]
+[connection signal="file_selected" from="download_popup" to="." method="_on_download_popup_confirmed"]
